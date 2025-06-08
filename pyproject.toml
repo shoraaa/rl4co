@@ -60,15 +60,15 @@ dependencies = [
     "einops",
     "hydra-core",
     "hydra-colorlog",
-    "lightning>=2.1.0",
+    #"lightning>=2.1.0",
     "matplotlib",
     "omegaconf",
     "pyrootutils",
     "rich",
     "robust-downloader",
     "scipy",
-    "tensordict>=0.6.0",
-    "torchrl>=0.6.0",
+    #"tensordict>=0.6.0",
+    #"torchrl>=0.6.0",
     "wandb",
 ]
 
@@ -81,7 +81,9 @@ dev = [
     "pytest-cov",
     "pytest-xdist>=3.7.0",
 ]
-graph = ["torch_geometric"]
+graph = [
+    #"torch_geometric"
+]
 routing = [
     "numba>=0.58.1",
     "pyvrp>=0.9.0 ; python_version < '4.0'",

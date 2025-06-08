@@ -34,7 +34,6 @@ class CustomizeTSPInitEmbedding(nn.Module):
         out = self.init_embed(td["locs"])
         return out
 
-
 class NeuOptPolicy(ImprovementPolicy):
     """
     NeuOpt Policy based on Ma et al. (2023)

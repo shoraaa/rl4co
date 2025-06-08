@@ -407,3 +407,41 @@ class ImprovementEnvBase(RL4COEnvBase, metaclass=abc.ABCMeta):
     @classmethod
     def get_current_solution(cls, td):
         return cls._get_real_solution(td["rec_current"])
+
+
+
+class ImprovementATSPEnvBase(ImprovementEnvBase, metaclass=abc.ABCMeta):
+    """Base class for Improvement environments for ATSP based on RL4CO EnvBase.
+    Note that this class assumes that the solution is stored in a linked list format.
+    Here, if `rec[i] = j`, it means the node `i` is connected to node `j`, i.e., edge `i-j` is in the solution.
+    For example, if edge `0-1`, edge `1-5`, edge `2-10` are in the solution, so we have `rec[0]=1`, `rec[1]=5` and `rec[2]=10`.
+    """
+
+    def __init__(
+        self,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+    # @staticmethod
+    # def get_costs(coordinates, rec):
+    #     batch_size, size = rec.size()
+
+    #     # calculate the route length value
+    #     d1 = coordinates.gather(1, rec.long().unsqueeze(-1).expand(batch_size, size, 2))
+    #     d2 = coordinates
+    #     length = (d1 - d2).norm(p=2, dim=2).sum(1)
+
+    #     return length
+
+    @staticmethod
+    def get_costs(cost_matrix, rec):
+        # rec is solution in linked list format, i.e., rec[i] = j means edge i-j is in the solution
+        # dist is the distance matrix, i.e., dist[i, j] is the distance from node i to node j
+        batch_size, size = rec.size()
+
+        idx = torch.arange(size, device=rec.device).unsqueeze(0).expand(batch_size, size)
+        next_idx = rec
+        length = cost_matrix[torch.arange(batch_size).unsqueeze(1), idx, next_idx].sum(1)
+
+        return length
