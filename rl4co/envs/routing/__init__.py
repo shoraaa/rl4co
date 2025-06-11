@@ -25,5 +25,5 @@ from rl4co.envs.routing.svrp.env import SVRPEnv
 from rl4co.envs.routing.svrp.generator import SVRPGenerator
 from rl4co.envs.routing.tsp.env import DenseRewardTSPEnv, TSPEnv, TSPkoptEnv
 from rl4co.envs.routing.tsp.generator import TSPGenerator
-from rl4co.envs.routing.ssp.env import SSPEnv
-from rl4co.envs.routing.ssp.generator import SSPGenerator
+from rl4co.envs.routing.ssp.env import SSPEnv, SSPkoptEnv
+from rl4co.envs.routing.ssp.generator import SSPGenerator, SSPkoptGenerator
