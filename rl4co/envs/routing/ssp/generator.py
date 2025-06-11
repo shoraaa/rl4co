@@ -148,9 +148,7 @@ class SSPkoptGenerator(Generator):
             )
 
         # Set diagonal to large number to avoid self-loops
-        inf = 1e6
-        diag_idx = torch.arange(self.num_loc, device=codes.device)
-        cost_matrix[:, diag_idx, diag_idx] = inf
+        cost_matrix[..., torch.arange(self.num_loc), torch.arange(self.num_loc)] = 0
 
         return TensorDict({"cost_matrix": cost_matrix, "codes": codes}, batch_size=batch_size)
 
