@@ -361,10 +361,14 @@ class ATSPkoptEnv(ImprovementATSPEnvBase):
     def _make_spec(self, generator: ATSPGenerator):
         """Make the observation and action specs from the parameters."""
         self.observation_spec = Composite(
-            cost_matrix=Bounded(
-                low=generator.min_dist,
-                high=generator.max_dist,
+            cost_matrix=Unbounded(
                 shape=(generator.num_loc, generator.num_loc),
+                dtype=torch.float32,
+            ),
+            locs=Bounded(
+                low=generator.min_loc,
+                high=generator.max_loc,
+                shape=(generator.num_loc, 2),
                 dtype=torch.float32,
             ),
             cost_current=Unbounded(

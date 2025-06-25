@@ -27,13 +27,13 @@ class SSPEnv(RL4COEnvBase):
 
     def __init__(
         self,
-        generator: SSPGenerator = None,
+        generator: SSPkoptGenerator = None,
         generator_params: dict = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
         if generator is None:
-            generator = SSPGenerator(**generator_params)
+            generator = SSPkoptGenerator(**generator_params)
         self.generator = generator
         self._make_spec(self.generator)
 
@@ -208,6 +208,33 @@ class SSPkoptEnv(ImprovementATSPEnvBase):
         self.k_max = k_max
         self.two_opt_mode = k_max == 2
         self._make_spec(self.generator)
+
+    @staticmethod
+    def get_costs(cost_matrix, rec):
+        """
+        Computes the tour cost by summing the edges defined in `rec`,
+        and subtracts the longest edge to convert cycle to path cost.
+
+        Args:
+            cost_matrix: [B, N, N] distance matrix
+            rec: [B, N] where rec[b][i] = j means edge i -> j is part of the solution
+
+        Returns:
+            Tensor of shape [B] with the modified tour cost
+        """
+        batch_size, size = rec.size()
+
+        idx = torch.arange(size, device=rec.device).unsqueeze(0).expand(batch_size, size)  # [B, N]
+        next_idx = rec  # [B, N]
+
+        edge_costs = cost_matrix[torch.arange(batch_size).unsqueeze(1), idx, next_idx]  # [B, N]
+        total_cost = edge_costs.sum(1)  # [B]
+        max_edge = edge_costs.max(1).values  # [B]
+
+        tour_cost = total_cost - max_edge  # remove longest edge
+
+        return tour_cost
+
 
     def _step(self, td: TensorDict, solution_to=None) -> TensorDict:
         # get state information from td

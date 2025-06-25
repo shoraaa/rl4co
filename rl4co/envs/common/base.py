@@ -437,11 +437,13 @@ class ImprovementATSPEnvBase(ImprovementEnvBase, metaclass=abc.ABCMeta):
     @staticmethod
     def get_costs(cost_matrix, rec):
         # rec is solution in linked list format, i.e., rec[i] = j means edge i-j is in the solution
-        # dist is the distance matrix, i.e., dist[i, j] is the distance from node i to node j
+        # cost_matrix is the distance matrix, i.e., cost_matrix[i, j] is the distance from node i to node j
         batch_size, size = rec.size()
 
-        idx = torch.arange(size, device=rec.device).unsqueeze(0).expand(batch_size, size)
-        next_idx = rec
-        length = cost_matrix[torch.arange(batch_size).unsqueeze(1), idx, next_idx].sum(1)
+        device = rec.device
 
-        return length
+        batch_idx = torch.arange(batch_size, device=device).unsqueeze(1).expand(batch_size, size)  # [B, N]
+        idx = torch.arange(size, device=device).unsqueeze(0).expand(batch_size, size)              # [B, N]
+        next_idx = rec                                                                              # [B, N]
+
+        return cost_matrix[batch_idx, idx, next_idx].sum(-1)
