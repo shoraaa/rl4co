@@ -74,6 +74,41 @@ def generate_batch_superstring_data(batch_size, num_str, str_dim, alphabet_size=
     
     return batch_data.float()
 
+from sklearn.manifold import MDS
+def batch_mds(cost_matrix):
+    """
+    Applies MDS to a batch of cost matrices [B, N, N],
+    returns a tensor of coordinates [B, N, 2]
+    """
+    B, N, _ = cost_matrix.shape
+    coords = []
+
+    mds = MDS(n_components=2, dissimilarity='precomputed', normalized_stress='auto')
+
+    for b in range(B):
+        dist_matrix = cost_matrix[b].cpu().numpy()
+        coord = mds.fit_transform(dist_matrix)  # [N, 2]
+        coords.append(coord)
+
+    coords = torch.tensor(coords, dtype=torch.float32)  # [B, N, 2]
+    return coords
+
+def batch_svd_embed(cost_matrix, k=2):
+    """
+    For each sample in [B,N,N], do an SVD on the N×N cost matrix
+    and use the top-k singular vectors to embed each row in k-D.
+    Returns [B, N, k].
+    """
+    B, N, _ = cost_matrix.shape
+    coords = []
+    for b in range(B):
+        C = cost_matrix[b]                # [N,N]
+        # SVD: C = U @ diag(S) @ V^T
+        U, S, Vh = torch.linalg.svd(C)    # U: [N,N], S: [N], Vh: [N,N]
+        # Row embeddings: multiply U[:, :k] by sqrt of singular values
+        X = U[:, :k] * S[:k].sqrt()       # [N, k]
+        coords.append(X)
+    return torch.stack(coords, dim=0)      # [B, N, k]
 
 
 class SSPkoptGenerator(Generator):
@@ -150,7 +185,13 @@ class SSPkoptGenerator(Generator):
         # Set diagonal to large number to avoid self-loops
         cost_matrix[..., torch.arange(self.num_loc), torch.arange(self.num_loc)] = 0
 
-        return TensorDict({"cost_matrix": cost_matrix, "codes": codes}, batch_size=batch_size)
+        locs_mds = batch_svd_embed(cost_matrix, k=2)  # [B, N, 2] coordinates for visualization
+
+        return TensorDict({
+            "cost_matrix": cost_matrix, 
+            "codes": codes,
+            "locs_mds": locs_mds,
+            }, batch_size=batch_size)
 
     def _get_initial_solutions(self, cost_matrix):
         batch_size = cost_matrix.size(0)
