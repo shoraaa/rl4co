@@ -123,6 +123,23 @@ def batch_mds(cost_matrix):
     coords = torch.tensor(coords, dtype=torch.float32)  # [B, N, 2]
     return coords
 
+def batch_svd_embed(cost_matrix, k=2):
+    """
+    For each sample in [B,N,N], do an SVD on the N×N cost matrix
+    and use the top-k singular vectors to embed each row in k-D.
+    Returns [B, N, k].
+    """
+    B, N, _ = cost_matrix.shape
+    coords = []
+    for b in range(B):
+        C = cost_matrix[b]                # [N,N]
+        # SVD: C = U @ diag(S) @ V^T
+        U, S, Vh = torch.linalg.svd(C)    # U: [N,N], S: [N], Vh: [N,N]
+        # Row embeddings: multiply U[:, :k] by sqrt of singular values
+        X = U[:, :k] * S[:k].sqrt()       # [N, k]
+        coords.append(X)
+    return torch.stack(coords, dim=0)      # [B, N, k]
+
 
 class ATSPCoordGenerator(Generator):
 
@@ -156,7 +173,7 @@ class ATSPCoordGenerator(Generator):
         dms = torch.cdist(locs, locs, p=2)
 
         # Convert cost_matrix [N, N] into 2D embeddings
-        locs_mds = batch_mds(dms)
+        locs_mds = batch_svd_embed(dms, 5)
 
         return TensorDict(
             {
