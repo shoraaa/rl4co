@@ -185,7 +185,7 @@ class SSPkoptGenerator(Generator):
         # Set diagonal to large number to avoid self-loops
         cost_matrix[..., torch.arange(self.num_loc), torch.arange(self.num_loc)] = 0
 
-        locs_mds = batch_svd_embed(cost_matrix, k=5)  # [B, N, 2] coordinates for visualization
+        locs_mds = batch_svd_embed(cost_matrix, k=2)  # [B, N, 2] coordinates for visualization
 
         return TensorDict({
             "cost_matrix": cost_matrix, 
