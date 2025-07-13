@@ -92,29 +92,29 @@ class FocusedACO(AntSystem):
         self.pheromone += delta_pheromone
 
         # Per-batch tau_min and tau_max
-        rho = 1.0 - self.decay
-        p_best = 0.1
-        cand_count = self.pheromone.shape[-1]
-        avg = cand_count / 2.0
-        p = pow(p_best, 1.0 / cand_count)
+        # rho = 1.0 - self.decay
+        # p_best = 0.1
+        # cand_count = self.pheromone.shape[-1]
+        # avg = cand_count / 2.0
+        # p = pow(p_best, 1.0 / cand_count)
 
-        min_vals, _ = reward.min(dim=1)         # shape: (B,)
-        cost = min_vals.abs()                   # |min reward[b]|
+        # min_vals, _ = reward.min(dim=1)         # shape: (B,)
+        # cost = min_vals.abs()                   # |min reward[b]|
 
-        # vectorized τ_max and τ_min
-        tau_max = 1.0 / (cost * rho)            # shape: (B,)
-        tau_min = torch.min(
-            tau_max,
-            tau_max * (1 - p) / ((avg - 1) * p)
-        )                                        # shape: (B,)
+        # # vectorized τ_max and τ_min
+        # tau_max = 1.0 / (cost * rho)            # shape: (B,)
+        # tau_min = torch.minimum(
+        #     tau_max,
+        #     tau_max * (1 - p) / ((avg - 1) * p)
+        # )                                        # shape: (B,)
 
-        # clamp pheromone per‐batch in one go
-        # expand to match pheromone’s [B, N, N] shape
-        tau_min = tau_min.view(-1, 1, 1)
-        tau_max = tau_max.view(-1, 1, 1)
+        # # clamp pheromone per‐batch in one go
+        # # expand to match pheromone’s [B, N, N] shape
+        # tau_min = tau_min.view(-1, 1, 1)
+        # tau_max = tau_max.view(-1, 1, 1)
 
-        self.pheromone = torch.clamp(
-            self.pheromone,
-            min=tau_min,
-            max=tau_max
-        )
+        # self.pheromone = torch.clamp(
+        #     self.pheromone,
+        #     min=tau_min,
+        #     max=tau_max
+        # )
