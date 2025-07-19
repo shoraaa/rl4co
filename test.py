@@ -258,7 +258,7 @@ class StaticEmbedding(nn.Module):
 
 def load_attention_model(checkpoint_path, opts):
     """Load AttentionModel from checkpoint"""
-    env = SSPEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), test_file="data_ssp.npz")
+    env = SSPEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), test_file=opts.test_file)
     embedding = CustomizeATSPInitEmbedding(embed_dim=opts.embedding_dim, num_loc=opts.graph_size) if opts.embedding_type == "cost" else \
                 CustomizeSSPInitEmbedding(embed_dim=opts.embedding_dim, fixed_len=opts.string_length) if opts.embedding_type == "codes" else \
                 CustomizeSVDInitEmbedding(embed_dim=opts.embedding_dim)
@@ -285,7 +285,7 @@ def load_attention_model(checkpoint_path, opts):
 
 def load_neuopt_model(checkpoint_path, opts):
     """Load NeuOpt model from checkpoint"""
-    env = SSPkoptEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), k_max=opts.k, test_file="data_ssp.npz")
+    env = SSPkoptEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), k_max=opts.k, test_file=opts.test_file)
     embedding = CustomizeATSPInitEmbedding(embed_dim=opts.embedding_dim, num_loc=opts.graph_size) if opts.embedding_type == "cost" else \
                 CustomizeSSPInitEmbedding(embed_dim=opts.embedding_dim, fixed_len=opts.string_length) if opts.embedding_type == "codes" else \
                 CustomizeSVDInitEmbedding(embed_dim=opts.embedding_dim)
@@ -432,9 +432,7 @@ def test_models(opts):
     return results
 
 
-def run_test(opts):
-    """Main function to run the test"""
-
+def generate_test_file(opts):
     env = SSPkoptEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), k_max=opts.k)
     batch_size = opts.batch_size
     td = env.reset(batch_size=[batch_size])
@@ -452,6 +450,13 @@ def run_test(opts):
     np.savez(os.path.join(data_dir, "data_ssp.npz"), codes=codes_data, cost_matrix=cost_matrix)
     print(f"Data saved to {os.path.join(data_dir, 'data_ssp.npz')}")
     print(f"Codes shape: {codes_data.shape}")
+
+def run_test(opts):
+    """Main function to run the test"""
+
+    if opts.test_file is None:
+        generate_test_file(opts)
+        opts.test_file = "data_ssp.npz"
     
     # Pretty print the run args
     print("Test Configuration:")

@@ -20,6 +20,7 @@ def get_options(args=None):
 
     parser.add_argument('--neuopt_checkpoint_path', type=str, default=None, help='Path to NeuOpt checkpoint to load')
     parser.add_argument('--am_checkpoint_path', type=str, default=None, help='Path to AttentionModel checkpoint to load')
+    parser.add_argument('--test_file', type=str, default=None, help='Path to test file to load')
     
     ### NeuOpt configs
     parser.add_argument('--k', type=int, default=4) # the maximum basis move number K
