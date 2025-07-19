@@ -91,12 +91,6 @@ class SSPEnv(RL4COEnvBase):
 
     def _make_spec(self, generator: SSPGenerator):
         self.observation_spec = Composite(
-            codes=Bounded(
-                low=generator.min_loc,
-                high=generator.max_loc,
-                shape=(generator.num_loc, 2),
-                dtype=torch.float32,
-            ),
             current_node=Unbounded(
                 shape=(1),
                 dtype=torch.int64,

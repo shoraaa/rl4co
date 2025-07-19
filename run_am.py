@@ -12,9 +12,11 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint, RichModelSummary
 from lightning.pytorch.loggers import WandbLogger
 
-from rl4co.envs import SSPkoptEnv
-from rl4co.models import NeuOpt
+from rl4co.envs import SSPEnv
+from rl4co.models import AttentionModel
 from rl4co.utils.trainer import RL4COTrainer
+
+from rl4co.utils.ops import gather_by_index
 
 import torch.nn as nn
 
@@ -64,6 +66,48 @@ class CustomizeSVDInitEmbedding(nn.Module):
         out = self.init_embed(td["locs_mds"])
         return out
     
+class SSPContext(nn.Module):
+    """Context embedding for the Traveling Salesman Problem (TSP).
+    Project the following to the embedding space:
+        - first node embedding
+        - current node embedding
+    """
+
+    def __init__(self, embedding_dim,  linear_bias=True):
+        super(SSPContext, self).__init__()
+        self.W_placeholder = nn.Parameter(
+            torch.Tensor(embedding_dim).uniform_(-1, 1)
+        )
+        self.project_context = nn.Linear(
+            embedding_dim, embedding_dim, bias=linear_bias
+        )
+
+    def forward(self, embeddings, td):
+        batch_size = embeddings.size(0)
+        # By default, node_dim = -1 (we only have one node embedding per node)
+        node_dim = (
+            (-1,) if td["current_node"].dim() == 1 else (td["current_node"].size(-1), -1)
+        )
+        if td["i"][(0,) * td["i"].dim()].item() < 1:  # get first item fast
+            context_embedding = self.W_placeholder[None, :].expand(
+                batch_size, self.W_placeholder.size(-1)
+            )
+        else:
+            context_embedding = gather_by_index(
+                embeddings,
+                torch.stack([td["current_node"]], -1).view(
+                    batch_size, -1
+                ),
+            ).view(batch_size, *node_dim)
+        return self.project_context(context_embedding)
+        
+class StaticEmbedding(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super(StaticEmbedding, self).__init__()
+
+    def forward(self, td):
+        return 0, 0, 0
+
 
 def run(opts):
 
@@ -86,34 +130,22 @@ def run(opts):
     # Set the device
     opts.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    env = SSPkoptEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met), k_max=opts.k)
+    env = SSPEnv(generator_params=dict(num_loc=opts.graph_size, fixed_len=opts.string_length, init_sol_type=opts.init_val_met))
     embedding = CustomizeATSPInitEmbedding(embed_dim=opts.embedding_dim, num_loc=opts.graph_size) if opts.embedding_type == "cost" else \
                 CustomizeSSPInitEmbedding(embed_dim=opts.embedding_dim, fixed_len=opts.string_length) if opts.embedding_type == "codes" else \
                 CustomizeSVDInitEmbedding(embed_dim=opts.embedding_dim)
-    model = NeuOpt(
+    model = AttentionModel(
             env,
-
-            ppo_epochs=opts.K_epochs,
-            clip_range=opts.eps_clip,
-            T_train=opts.T_train,
-            n_step=opts.n_step,
 
             batch_size=opts.batch_size,
             train_data_size=opts.epoch_size,
             val_data_size=opts.val_size,
             test_data_size=opts.test_size,
 
-            T_test=opts.T_max,
-            CL_best=True,
-            gamma=opts.gamma,
-            lr_policy=opts.lr_model,
-            lr_critic=opts.lr_critic,
-            lr_scheduler_kwargs=dict(
-                gamma=opts.lr_decay,
-            ),
-
-            CL_scalar=opts.warm_up,
-            max_grad_norm=opts.max_grad_norm,
+            optimizer="Adam",
+            optimizer_kwargs={"lr": 1e-4, "weight_decay": 1e-6},
+            lr_scheduler="MultiStepLR",
+            lr_scheduler_kwargs={"milestones": [901, ], "gamma": 0.1},
 
             policy_kwargs=dict(
                 embed_dim=opts.embedding_dim,
@@ -123,27 +155,23 @@ def run(opts):
                 normalization=opts.normalization,
                 tanh_clipping=opts.v_range,
                 init_embedding=embedding,
-            ),
-
-            critic_kwargs=dict(
-                embed_dim=opts.embedding_dim,
-                num_heads=opts.critic_head_num,
-                feedforward_hidden=opts.hidden_dim,
-                normalization=opts.normalization,
+                context_embedding=SSPContext(embedding_dim=opts.embedding_dim),
+                dynamic_embedding=StaticEmbedding(opts.embedding_dim),
+                use_graph_context=False
             ),
 
             metrics=dict(
-                train=["loss", "surrogate_loss", "value_loss", "cost_bsf", "cost_init"],
-                val=["cost_bsf", "cost_init"],
-                test=["cost_bsf", "cost_init"],
+                train=["loss", "value_loss, reward"],
+                val=["reward"],
+                test=["reward"],
             ),
 
         )
     checkpoint_callback = ModelCheckpoint(dirpath=opts.save_dir, 
-                                        filename="neuopt_epoch_{epoch:03d}",  # save as epoch_XXX.ckpt
+                                        filename="am_epoch_{epoch:03d}",  # save as epoch_XXX.ckpt
                                         save_top_k=1, # save only the best model
                                         save_last=True, # save the last model
-                                        monitor="val/cost_bsf", # monitor validation reward
+                                        monitor="val/reward", # monitor validation reward
                                         mode="max") # maximize validation reward
 
 

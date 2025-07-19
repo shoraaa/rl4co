@@ -17,6 +17,9 @@ def get_options(args=None):
     # parser.add_argument('--log_every_n_steps', type=int, default=1, help='Log every n steps')
     parser.add_argument('--no_saving', action='store_true', help='Disable saving checkpoints')
     parser.add_argument('--seed', type=int, default=6666, help='Random seed to use')
+
+    parser.add_argument('--neuopt_checkpoint_path', type=str, default=None, help='Path to NeuOpt checkpoint to load')
+    parser.add_argument('--am_checkpoint_path', type=str, default=None, help='Path to AttentionModel checkpoint to load')
     
     ### NeuOpt configs
     parser.add_argument('--k', type=int, default=4) # the maximum basis move number K
