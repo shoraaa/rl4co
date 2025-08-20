@@ -142,10 +142,13 @@ def run(opts):
             val_data_size=opts.val_size,
             test_data_size=opts.test_size,
 
+            val_batch_size=opts.val_batch_size,
+            test_batch_size=opts.test_batch_size,
+
             optimizer="Adam",
             optimizer_kwargs={"lr": 1e-4, "weight_decay": 1e-6},
-            lr_scheduler="MultiStepLR",
-            lr_scheduler_kwargs={"milestones": [901, ], "gamma": 0.1},
+            lr_scheduler=opts.lr_scheduler,
+            lr_scheduler_kwargs={"milestones": [1901, ], "gamma": opts.lr_scheduler_gamma},
 
             policy_kwargs=dict(
                 embed_dim=opts.embedding_dim,
@@ -171,8 +174,8 @@ def run(opts):
                                         filename="am_epoch_{epoch:03d}",  # save as epoch_XXX.ckpt
                                         save_top_k=1, # save only the best model
                                         save_last=True, # save the last model
-                                        monitor="val/reward", # monitor validation reward
-                                        mode="max") # maximize validation reward
+                                        monitor=opts.monitor, # monitor validation reward
+                                        mode=opts.monitor_mode) # maximize validation reward
 
 
     rich_model_summary = RichModelSummary(max_depth=3)
