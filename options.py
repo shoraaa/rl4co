@@ -47,7 +47,7 @@ def get_options(args=None):
     parser.add_argument('--max_grad_norm', type=float, default=0.05, help='Maximum L2 norm for gradient clipping, default 1.0 (0 to disable clipping)')
 
     parser.add_argument('--val_batch_size', type=int, default=100, help='Number of batched instances used for reporting validation performance')
-    parser.add_argument('--test_data_size', type=int, default=100, help='Number of batched instances used for testing performance')
+    parser.add_argument('--test_batch_size', type=int, default=100, help='Number of batched instances used for testing performance')
     parser.add_argument('--lr_scheduler', default='MultiStepLR', help='Type of lr_scheduler (default: MultiStepLR)')
     parser.add_argument('--lr_scheduler_gamma', type=float, default=0.1, help='lr_scheduler:gamma value')
     parser.add_argument('--monitor', default='val/reward', help='Type of value to monitor when checkpoint callback (default: val/reward)')
