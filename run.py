@@ -98,10 +98,13 @@ def run(opts):
             T_train=opts.T_train,
             n_step=opts.n_step,
 
-            batch_size=opts.batch_size,
             train_data_size=opts.epoch_size,
             val_data_size=opts.val_size,
             test_data_size=opts.test_size,
+
+            batch_size=opts.batch_size,
+            val_batch_size=opts.val_batch_size,
+            test_batch_size=opts.test_batch_size,
 
             T_test=opts.T_max,
             CL_best=True,
